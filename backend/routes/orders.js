@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { brand_id, season_id, store_id, collection_id, payment_terms_id, parts, total_order_value_status, deposit_payments_only } = req.body;
+  const { brand_id, season_id, store_id, collection_id, payment_terms_id, parts, total_order_value, total_order_quantity, total_order_value_status, deposit_payments_only, deposit_payment } = req.body;
 
   const { data, error } = await supabase
     .from('delivery_orders')
@@ -35,8 +35,11 @@ router.post('/', async (req, res) => {
       collection_id: collection_id || null,
       payment_terms_id: payment_terms_id || null,
       parts: parts || [],
+      total_order_value: total_order_value || null,
+      total_order_quantity: total_order_quantity || null,
       total_order_value_status: total_order_value_status || null,
       deposit_payments_only: deposit_payments_only || null,
+      deposit_payment: deposit_payment || null,
     }])
     .select(SELECT)
     .single();
@@ -46,7 +49,7 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const { brand_id, season_id, store_id, collection_id, payment_terms_id, parts, total_order_value_status, deposit_payments_only } = req.body;
+  const { brand_id, season_id, store_id, collection_id, payment_terms_id, parts, total_order_value, total_order_quantity, total_order_value_status, deposit_payments_only, deposit_payment } = req.body;
 
   const { data, error } = await supabase
     .from('delivery_orders')
@@ -57,8 +60,11 @@ router.put('/:id', async (req, res) => {
       collection_id: collection_id || null,
       payment_terms_id: payment_terms_id || null,
       parts: parts || [],
+      total_order_value: total_order_value || null,
+      total_order_quantity: total_order_quantity || null,
       total_order_value_status: total_order_value_status || null,
       deposit_payments_only: deposit_payments_only || null,
+      deposit_payment: deposit_payment || null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', req.params.id)

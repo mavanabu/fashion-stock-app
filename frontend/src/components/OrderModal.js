@@ -9,12 +9,12 @@ const STATUS_OPTIONS = [
 
 const emptyInfo = () => ({
   brand_id: '', season_id: '', store_id: '', collection_id: '', payment_terms_id: '',
-  total_order_value_status: '', deposit_payments_only: '',
+  total_order_value: '', total_order_quantity: '', total_order_value_status: '', deposit_payments_only: '', deposit_payment: '',
 });
 
 const emptyPart = (part) => ({
   ordered_amount: null, delivery_amount: null, deposit_payment: null,
-  delivery_qty: null, payment_status: '',
+  delivery_qty: null, paid_amount: null, payment_status: '',
   actual_delivery_date: '', invoice_date: '', part: String(part),
   delivery_amount_1: null, delivery_qty_1: null, invoice_date_del_1: '',
   payment_status_del_1: '', actual_payment_date_1: '',
@@ -157,8 +157,11 @@ export default function OrderModal({ mode, order, options, onSave, onClose }) {
     store_id: order.store_id || '',
     collection_id: order.collection_id || '',
     payment_terms_id: order.payment_terms_id || '',
+    total_order_value: order.total_order_value || '',
+    total_order_quantity: order.total_order_quantity || '',
     total_order_value_status: order.total_order_value_status || '',
     deposit_payments_only: order.deposit_payments_only || '',
+    deposit_payment: order.deposit_payment || '',
   } : null);
 
   const [editParts, setEditParts] = useState(() => {
@@ -212,9 +215,21 @@ export default function OrderModal({ mode, order, options, onSave, onClose }) {
     ...[0,1,2,3,4,5].map(i => ({ id: i, label: `Del ${i + 1}` })),
   ];
 
+  const prevDeliveredAmount = activeTab >= 0
+    ? currentParts.slice(0, activeTab).reduce((s, p) => s + Number(p.delivery_amount_1 || 0), 0)
+    : 0;
+  const prevDeliveredQty = activeTab >= 0
+    ? currentParts.slice(0, activeTab).reduce((s, p) => s + Number(p.delivery_qty_1 || 0), 0)
+    : 0;
+  const tabOrderValue = Number(currentInfo.total_order_value || 0) - prevDeliveredAmount;
+  const tabOrderQty = Number(currentInfo.total_order_quantity || 0) - prevDeliveredQty;
+  const balanceAmount = tabOrderValue - Number(currentParts[activeTab >= 0 ? activeTab : 0]?.delivery_amount_1 || 0);
+  const balanceQty = tabOrderQty - Number(currentParts[activeTab >= 0 ? activeTab : 0]?.delivery_qty_1 || 0);
+
   return (
     <div
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      onKeyDown={e => { if (e.key === 'Backspace' && e.target === e.currentTarget) e.preventDefault(); }}
       style={{
         position: 'fixed', inset: 0,
         background: 'rgba(13, 9, 31, 0.65)',
@@ -288,7 +303,7 @@ export default function OrderModal({ mode, order, options, onSave, onClose }) {
 
           {/* Info tab */}
           {activeTab === -1 && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 18 }}>
               <Field label="Brand">
                 <SearchSelect value={currentInfo.brand_id} onChange={v => setInfoField('brand_id', v)} opts={options.brands} placeholder="Search brand…" />
               </Field>
@@ -301,16 +316,16 @@ export default function OrderModal({ mode, order, options, onSave, onClose }) {
               <Field label="Collection">
                 <SearchSelect value={currentInfo.collection_id} onChange={v => setInfoField('collection_id', v)} opts={options.collections} placeholder="Search collection…" />
               </Field>
+              <Field label="Total Order Value">
+                <FocusInput type="number" step="0.01" min="0" value={currentInfo.total_order_value}
+                  onChange={e => setInfoField('total_order_value', e.target.value)} placeholder="0.00" />
+              </Field>
+              <Field label="Total Order Quantity">
+                <FocusInput type="number" step="1" min="0" value={currentInfo.total_order_quantity}
+                  onChange={e => setInfoField('total_order_quantity', e.target.value)} placeholder="0" />
+              </Field>
               <Field label="Payment Terms">
                 <Sel value={currentInfo.payment_terms_id} onChange={v => setInfoField('payment_terms_id', v)} opts={options.payment_terms} placeholder="Select terms" />
-              </Field>
-              <Field label="Total Order Value">
-                <div style={{
-                  ...inputStyle, display: 'flex', alignItems: 'center',
-                  background: '#f0eef8', color: '#7c3aed', fontWeight: 700, fontSize: 14,
-                }}>
-                  {currentParts.reduce((s, p) => s + Number(p.ordered_amount || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
               </Field>
               <Field label="Total Order Value Status">
                 <select value={currentInfo.total_order_value_status} onChange={e => setInfoField('total_order_value_status', e.target.value)} style={inputStyle}>
@@ -323,48 +338,53 @@ export default function OrderModal({ mode, order, options, onSave, onClose }) {
                 <FocusInput type="number" step="0.01" min="0" value={currentInfo.deposit_payments_only}
                   onChange={e => setInfoField('deposit_payments_only', e.target.value)} placeholder="0.00" />
               </Field>
+              <Field label="Deposit Payment">
+                <FocusInput type="number" step="0.01" min="0" value={currentInfo.deposit_payment || ''}
+                  onChange={e => setInfoField('deposit_payment', e.target.value)} placeholder="0.00" />
+              </Field>
             </div>
           )}
 
           {/* Part tabs */}
           {activeTab >= 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18 }}>
-              <Field label="Ordered Amount">
-                <FocusInput type="number" step="0.01" min="0" value={currentParts[activeTab].ordered_amount}
-                  onChange={e => setPartField('ordered_amount', e.target.value)} placeholder="0.00" />
+            <div key={activeTab} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 18 }}>
+              <Field label="Total Order Value">
+                <div style={{ ...inputStyle, background: '#f0eef8', color: '#7c3aed', fontWeight: 700, fontSize: 14 }}>
+                  {currentInfo.total_order_value
+                    ? tabOrderValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : '—'}
+                </div>
               </Field>
-              <Field label="Delivery Amount">
-                <FocusInput type="number" step="0.01" min="0" value={currentParts[activeTab].delivery_amount}
-                  onChange={e => setPartField('delivery_amount', e.target.value)} placeholder="0.00" />
+              <Field label="Total Order Quantity">
+                <div style={{ ...inputStyle, background: '#f0eef8', color: '#7c3aed', fontWeight: 700, fontSize: 14 }}>
+                  {currentInfo.total_order_quantity ? tabOrderQty : '—'}
+                </div>
               </Field>
-              <Field label="Deposit Payment">
-                <FocusInput type="number" step="0.01" min="0" value={currentParts[activeTab].deposit_payment}
-                  onChange={e => setPartField('deposit_payment', e.target.value)} placeholder="0.00" />
-              </Field>
-              <Field label="Delivery Qty">
-                <FocusInput type="number" step="1" min="0" value={currentParts[activeTab].delivery_qty}
-                  onChange={e => setPartField('delivery_qty', e.target.value)} placeholder="0" />
-              </Field>
-              <Field label="Payment Status">
-                <select value={currentParts[activeTab].payment_status} onChange={e => setPartField('payment_status', e.target.value)} style={inputStyle}>
-                  {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-              </Field>
-              <Field label="Actual Delivery Date">
-                <FocusInput type="date" value={currentParts[activeTab].actual_delivery_date}
-                  onChange={e => setPartField('actual_delivery_date', e.target.value)} />
+              <Field label="Paid Amount">
+                <FocusInput type="number" step="0.01" min="0" value={currentParts[activeTab].paid_amount}
+                  onChange={e => setPartField('paid_amount', e.target.value)} placeholder="0.00" />
               </Field>
               <Field label="Invoice Date">
                 <FocusInput type="date" value={currentParts[activeTab].invoice_date}
                   onChange={e => setPartField('invoice_date', e.target.value)} />
               </Field>
-              <Field label="1st Delivery Amount">
+              <Field label="Delivery Amount">
                 <FocusInput type="number" step="0.01" min="0" value={currentParts[activeTab].delivery_amount_1}
                   onChange={e => setPartField('delivery_amount_1', e.target.value)} placeholder="0.00" />
               </Field>
-              <Field label="1st Delivery Qty">
+              <Field label="Delivery Qty">
                 <FocusInput type="number" step="1" min="0" value={currentParts[activeTab].delivery_qty_1}
                   onChange={e => setPartField('delivery_qty_1', e.target.value)} placeholder="0" />
+              </Field>
+              <Field label="Balance Amount">
+                <div style={{ ...inputStyle, background: '#f0eef8', color: '#7c3aed', fontWeight: 700, fontSize: 14 }}>
+                  {balanceAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </Field>
+              <Field label="Balance Qty">
+                <div style={{ ...inputStyle, background: '#f0eef8', color: '#7c3aed', fontWeight: 700, fontSize: 14 }}>
+                  {balanceQty}
+                </div>
               </Field>
               <Field label="Invoice Date Del.">
                 <FocusInput type="date" value={currentParts[activeTab].invoice_date_del_1}
@@ -387,12 +407,9 @@ export default function OrderModal({ mode, order, options, onSave, onClose }) {
                 <FocusInput type="number" step="0.01" min="0" value={currentParts[activeTab].total_volume_m3_1}
                   onChange={e => setPartField('total_volume_m3_1', e.target.value)} placeholder="0.00" />
               </Field>
-              <Field label="Weight">
+              <Field label="Weight KG">
                 <FocusInput type="number" step="0.01" min="0" value={currentParts[activeTab].weight_1}
                   onChange={e => setPartField('weight_1', e.target.value)} placeholder="0.00" />
-              </Field>
-              <Field label="Weight Measurement">
-                <SearchSelect value={currentParts[activeTab].weight_measurement_1} onChange={v => setPartField('weight_measurement_1', v)} opts={options.weight_measurements || []} placeholder="Select measurement…" />
               </Field>
               <Field label="Transport Company">
                 <SearchSelect value={currentParts[activeTab].transport_company_1} onChange={v => setPartField('transport_company_1', v)} opts={options.transport_companies || []} placeholder="Search company…" />
@@ -401,7 +418,7 @@ export default function OrderModal({ mode, order, options, onSave, onClose }) {
                 <FocusInput type="number" step="0.01" min="0" value={currentParts[activeTab].transport_price_1}
                   onChange={e => setPartField('transport_price_1', e.target.value)} placeholder="0.00" />
               </Field>
-              <Field label="Confirmation Date to Forwarder">
+              <Field label="Conf. Date to Forwarder">
                 <FocusInput type="date" value={currentParts[activeTab].confirmation_date_forwarder_1}
                   onChange={e => setPartField('confirmation_date_forwarder_1', e.target.value)} />
               </Field>
@@ -430,8 +447,21 @@ export default function OrderModal({ mode, order, options, onSave, onClose }) {
                   onChange={e => setPartField('transport_invoice_n_1', e.target.value)} placeholder="" />
               </Field>
               <Field label="Transportation Invoice Status">
-                <FocusInput type="text" value={currentParts[activeTab].transport_invoice_status_1}
-                  onChange={e => setPartField('transport_invoice_status_1', e.target.value)} placeholder="" />
+                <select
+                  value={currentParts[activeTab].transport_invoice_status_1}
+                  onChange={e => setPartField('transport_invoice_status_1', e.target.value)}
+                  style={{
+                    ...inputStyle,
+                    color: currentParts[activeTab].transport_invoice_status_1 === 'paid' ? '#059669'
+                      : currentParts[activeTab].transport_invoice_status_1 === 'unpaid' ? '#e11d48'
+                      : undefined,
+                    fontWeight: currentParts[activeTab].transport_invoice_status_1 ? 700 : 400,
+                  }}
+                >
+                  <option value="">— Select —</option>
+                  <option value="paid" style={{ color: '#059669', fontWeight: 700 }}>Paid</option>
+                  <option value="unpaid" style={{ color: '#e11d48', fontWeight: 700 }}>Unpaid</option>
+                </select>
               </Field>
               <Field label="Delay Reason">
                 <FocusInput type="text" value={currentParts[activeTab].delay_reason_1}

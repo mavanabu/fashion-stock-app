@@ -22,11 +22,25 @@ export default function Orders() {
   const [expanded, setExpanded] = useState({});
   const [hoveredRow, setHoveredRow] = useState(null);
 
+  const sortSeasons = (seasons) => {
+    const rank = (name) => {
+      const m = name.match(/^(SS|FW)(\d+)$/i);
+      if (!m) return [-9999, 0];
+      return [parseInt(m[2], 10), m[1].toUpperCase() === 'FW' ? 0 : 1];
+    };
+    return [...seasons].sort((a, b) => {
+      const [ya, sa] = rank(a.name);
+      const [yb, sb] = rank(b.name);
+      return ya !== yb ? yb - ya : sa - sb;
+    });
+  };
+
   const loadOptions = useCallback(async () => {
     const types = ['brands', 'seasons', 'stores', 'collections', 'payment_terms', 'transport_companies', 'weight_measurements'];
     const results = await Promise.all(types.map(t => optionsApi.list(t)));
     const opts = {};
     types.forEach((t, i) => { opts[t] = Array.isArray(results[i]) ? results[i] : []; });
+    opts.seasons = sortSeasons(opts.seasons);
     setOptions(opts);
   }, []);
 
