@@ -26,8 +26,7 @@ const emptyPart = (part) => ({
 });
 
 const partHasData = (p) => p &&
-  (p.ordered_amount || p.delivery_amount || p.delivery_qty ||
-   p.deposit_payment || p.actual_delivery_date || p.invoice_date);
+  (p.ordered_amount || p.delivery_amount || p.delivery_qty || p.invoice_date);
 
 const inputStyle = {
   width: '100%', padding: '10px 13px', border: '1.5px solid #e5e0f3',
@@ -35,11 +34,11 @@ const inputStyle = {
   background: '#faf9fe', color: '#1c1433', transition: 'border-color 0.15s',
 };
 
-function Field({ label, children }) {
+function Field({ label, children, required }) {
   return (
     <div>
       <label style={{ fontSize: 11, fontWeight: 700, color: '#6b5f82', display: 'block', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-        {label}
+        {label}{required && <span style={{ color: '#ef4444', marginLeft: 3 }}>*</span>}
       </label>
       {children}
     </div>
@@ -364,15 +363,15 @@ export default function OrderModal({ mode, order, options, onSave, onClose }) {
                 <FocusInput type="number" step="0.01" min="0" value={currentParts[activeTab].paid_amount}
                   onChange={e => setPartField('paid_amount', e.target.value)} placeholder="0.00" />
               </Field>
-              <Field label="Invoice Date">
+              <Field label="Invoice Date" required>
                 <FocusInput type="date" value={currentParts[activeTab].invoice_date}
                   onChange={e => setPartField('invoice_date', e.target.value)} />
               </Field>
-              <Field label="Delivery Amount">
+              <Field label="Delivery Amount" required>
                 <FocusInput type="number" step="0.01" min="0" value={currentParts[activeTab].delivery_amount_1}
                   onChange={e => setPartField('delivery_amount_1', e.target.value)} placeholder="0.00" />
               </Field>
-              <Field label="Delivery Qty">
+              <Field label="Delivery Qty" required>
                 <FocusInput type="number" step="1" min="0" value={currentParts[activeTab].delivery_qty_1}
                   onChange={e => setPartField('delivery_qty_1', e.target.value)} placeholder="0" />
               </Field>
