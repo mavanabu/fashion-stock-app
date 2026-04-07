@@ -1,5 +1,121 @@
 import { useState, useRef, useEffect } from 'react';
 
+const DEL_FIELDS_ORDER_KEY = 'del_fields_order';
+
+const DEL_FIELDS_DEFAULT = [
+  { key: 'total_order_value',             label: 'Total Order Value',              readonly: true,  computed: 'tabOrderValue' },
+  { key: 'total_order_quantity',           label: 'Total Order Quantity',           readonly: true,  computed: 'tabOrderQty' },
+  { key: 'paid_amount',                    label: 'Paid Amount',                    type: 'number',  step: '0.01', placeholder: '0.00' },
+  { key: 'invoice_date',                   label: 'Invoice Date',                   type: 'date',    required: true },
+  { key: 'delivery_amount_1',              label: 'Delivery Amount',                type: 'number',  step: '0.01', placeholder: '0.00', required: true },
+  { key: 'delivery_qty_1',                 label: 'Delivery Qty',                   type: 'number',  step: '1',    placeholder: '0',    required: true },
+  { key: 'balance_amount',                 label: 'Balance Amount',                 readonly: true,  computed: 'balanceAmount' },
+  { key: 'balance_qty',                    label: 'Balance Qty',                    readonly: true,  computed: 'balanceQty' },
+  { key: 'payment_status_del_1',           label: 'Payment Status Del.',            type: 'payment_status' },
+  { key: 'actual_payment_date_1',          label: 'Actual Payment Date',            type: 'date' },
+  { key: 'total_pallets_boxes_1',          label: 'Total N of Pallets/Boxes',       type: 'number',  step: '1',    placeholder: '0' },
+  { key: 'total_volume_m3_1',              label: 'Total Volume M3',                type: 'number',  step: '0.01', placeholder: '0.00' },
+  { key: 'weight_1',                       label: 'Weight KG',                      type: 'number',  step: '0.01', placeholder: '0.00' },
+  { key: 'transport_company_1',            label: 'Transport Company',              type: 'search_select' },
+  { key: 'transport_price_1',              label: 'Transport Price',                type: 'number',  step: '0.01', placeholder: '0.00' },
+  { key: 'confirmation_date_forwarder_1',  label: 'Conf. Date to Forwarder',        type: 'date' },
+  { key: 'pickup_date_1',                  label: 'Pick-up Date',                   type: 'date' },
+  { key: 'departure_date_1',               label: 'Departure Date',                 type: 'date' },
+  { key: 'eta_1',                          label: 'ETA',                            type: 'date' },
+  { key: 'actual_arrival_date_1',          label: 'Actual Arrival Date',            type: 'date' },
+  { key: 'truck_number_1',                 label: 'Truck Number',                   type: 'text' },
+  { key: 'transport_invoice_n_1',          label: 'Transportation Invoice N',       type: 'text' },
+  { key: 'transport_invoice_status_1',     label: 'Transportation Invoice Status',  type: 'transport_invoice_status' },
+  { key: 'delay_reason_1',                 label: 'Delay Reason',                   type: 'text' },
+  { key: 'confirmation_date_shipper_1',    label: 'Confirmation Date to Shipper',   type: 'date' },
+  { key: 'documents_receiving_date_1',     label: 'Documents Receiving Date',       type: 'date' },
+];
+
+function getOrderedDelFields() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DEL_FIELDS_ORDER_KEY));
+    if (!Array.isArray(saved) || saved.length === 0) return DEL_FIELDS_DEFAULT;
+    const byKey = Object.fromEntries(DEL_FIELDS_DEFAULT.map(f => [f.key, f]));
+    const ordered = saved.map(k => byKey[k]).filter(Boolean);
+    const savedSet = new Set(saved);
+    DEL_FIELDS_DEFAULT.forEach(f => { if (!savedSet.has(f.key)) ordered.push(f); });
+    return ordered;
+  } catch {
+    return DEL_FIELDS_DEFAULT;
+  }
+}
+
+function renderDelField(field, part, setPartField, options, computed, inputStyle) {
+  const { key, label, type, required, readonly, computed: computedKey, step, placeholder } = field;
+
+  if (readonly) {
+    let val;
+    if (computedKey === 'tabOrderValue') {
+      val = computed.hasOrderValue
+        ? computed.tabOrderValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : '—';
+    } else if (computedKey === 'tabOrderQty') {
+      val = computed.hasOrderQty ? computed.tabOrderQty : '—';
+    } else if (computedKey === 'balanceAmount') {
+      val = computed.balanceAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    } else if (computedKey === 'balanceQty') {
+      val = computed.balanceQty;
+    }
+    return (
+      <Field key={key} label={label}>
+        <div style={{ ...inputStyle, background: '#f0eef8', color: '#7c3aed', fontWeight: 700, fontSize: 14 }}>{val}</div>
+      </Field>
+    );
+  }
+
+  if (type === 'payment_status') {
+    return (
+      <Field key={key} label={label}>
+        <select value={part[key] || ''} onChange={e => setPartField(key, e.target.value)} style={inputStyle}>
+          {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+        </select>
+      </Field>
+    );
+  }
+
+  if (type === 'search_select') {
+    return (
+      <Field key={key} label={label}>
+        <SearchSelect value={part[key] || ''} onChange={v => setPartField(key, v)} opts={options.transport_companies || []} placeholder="Search company…" />
+      </Field>
+    );
+  }
+
+  if (type === 'transport_invoice_status') {
+    return (
+      <Field key={key} label={label}>
+        <select
+          value={part[key] || ''}
+          onChange={e => setPartField(key, e.target.value)}
+          style={{
+            ...inputStyle,
+            color: part[key] === 'paid' ? '#059669' : part[key] === 'unpaid' ? '#e11d48' : undefined,
+            fontWeight: part[key] ? 700 : 400,
+          }}
+        >
+          <option value="">— Select —</option>
+          <option value="paid" style={{ color: '#059669', fontWeight: 700 }}>Paid</option>
+          <option value="unpaid" style={{ color: '#e11d48', fontWeight: 700 }}>Unpaid</option>
+        </select>
+      </Field>
+    );
+  }
+
+  return (
+    <Field key={key} label={label} required={required}>
+      <FocusInput
+        type={type} step={step} min={type === 'number' ? '0' : undefined}
+        value={part[key] !== null && part[key] !== undefined ? part[key] : ''}
+        onChange={e => setPartField(key, e.target.value)} placeholder={placeholder || ''} />
+    </Field>
+  );
+}
+
 const STATUS_OPTIONS = [
   { value: '', label: '' },
   { value: 'unpaid', label: 'Unpaid' },
@@ -23,6 +139,7 @@ const emptyPart = (part) => ({
   confirmation_date_forwarder_1: '', pickup_date_1: '', departure_date_1: '',
   eta_1: '', actual_arrival_date_1: '', truck_number_1: '',
   transport_invoice_n_1: '', transport_invoice_status_1: '', delay_reason_1: '',
+  confirmation_date_shipper_1: '', documents_receiving_date_1: '',
 });
 
 const partHasData = (p) => p &&
@@ -174,6 +291,7 @@ export default function OrderModal({ mode, order, options, onSave, onClose }) {
   const [activeTab, setActiveTab] = useState(-1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [delFields] = useState(getOrderedDelFields);
 
   const currentInfo = mode === 'edit' ? editInfo : info;
   const currentParts = mode === 'edit' ? editParts : parts;
@@ -347,125 +465,21 @@ export default function OrderModal({ mode, order, options, onSave, onClose }) {
           {/* Part tabs */}
           {activeTab >= 0 && (
             <div key={activeTab} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 18 }}>
-              <Field label="Total Order Value">
-                <div style={{ ...inputStyle, background: '#f0eef8', color: '#7c3aed', fontWeight: 700, fontSize: 14 }}>
-                  {currentInfo.total_order_value
-                    ? tabOrderValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                    : '—'}
-                </div>
-              </Field>
-              <Field label="Total Order Quantity">
-                <div style={{ ...inputStyle, background: '#f0eef8', color: '#7c3aed', fontWeight: 700, fontSize: 14 }}>
-                  {currentInfo.total_order_quantity ? tabOrderQty : '—'}
-                </div>
-              </Field>
-              <Field label="Paid Amount">
-                <FocusInput type="number" step="0.01" min="0" value={currentParts[activeTab].paid_amount}
-                  onChange={e => setPartField('paid_amount', e.target.value)} placeholder="0.00" />
-              </Field>
-              <Field label="Invoice Date" required>
-                <FocusInput type="date" value={currentParts[activeTab].invoice_date}
-                  onChange={e => setPartField('invoice_date', e.target.value)} />
-              </Field>
-              <Field label="Delivery Amount" required>
-                <FocusInput type="number" step="0.01" min="0" value={currentParts[activeTab].delivery_amount_1}
-                  onChange={e => setPartField('delivery_amount_1', e.target.value)} placeholder="0.00" />
-              </Field>
-              <Field label="Delivery Qty" required>
-                <FocusInput type="number" step="1" min="0" value={currentParts[activeTab].delivery_qty_1}
-                  onChange={e => setPartField('delivery_qty_1', e.target.value)} placeholder="0" />
-              </Field>
-              <Field label="Balance Amount">
-                <div style={{ ...inputStyle, background: '#f0eef8', color: '#7c3aed', fontWeight: 700, fontSize: 14 }}>
-                  {balanceAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-              </Field>
-              <Field label="Balance Qty">
-                <div style={{ ...inputStyle, background: '#f0eef8', color: '#7c3aed', fontWeight: 700, fontSize: 14 }}>
-                  {balanceQty}
-                </div>
-              </Field>
-              <Field label="Invoice Date Del.">
-                <FocusInput type="date" value={currentParts[activeTab].invoice_date_del_1}
-                  onChange={e => setPartField('invoice_date_del_1', e.target.value)} />
-              </Field>
-              <Field label="Payment Status Del.">
-                <select value={currentParts[activeTab].payment_status_del_1} onChange={e => setPartField('payment_status_del_1', e.target.value)} style={inputStyle}>
-                  {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-              </Field>
-              <Field label="Actual Payment Date">
-                <FocusInput type="date" value={currentParts[activeTab].actual_payment_date_1}
-                  onChange={e => setPartField('actual_payment_date_1', e.target.value)} />
-              </Field>
-              <Field label="Total N of Pallets/Boxes">
-                <FocusInput type="number" step="1" min="0" value={currentParts[activeTab].total_pallets_boxes_1}
-                  onChange={e => setPartField('total_pallets_boxes_1', e.target.value)} placeholder="0" />
-              </Field>
-              <Field label="Total Volume M3">
-                <FocusInput type="number" step="0.01" min="0" value={currentParts[activeTab].total_volume_m3_1}
-                  onChange={e => setPartField('total_volume_m3_1', e.target.value)} placeholder="0.00" />
-              </Field>
-              <Field label="Weight KG">
-                <FocusInput type="number" step="0.01" min="0" value={currentParts[activeTab].weight_1}
-                  onChange={e => setPartField('weight_1', e.target.value)} placeholder="0.00" />
-              </Field>
-              <Field label="Transport Company">
-                <SearchSelect value={currentParts[activeTab].transport_company_1} onChange={v => setPartField('transport_company_1', v)} opts={options.transport_companies || []} placeholder="Search company…" />
-              </Field>
-              <Field label="Transport Price">
-                <FocusInput type="number" step="0.01" min="0" value={currentParts[activeTab].transport_price_1}
-                  onChange={e => setPartField('transport_price_1', e.target.value)} placeholder="0.00" />
-              </Field>
-              <Field label="Conf. Date to Forwarder">
-                <FocusInput type="date" value={currentParts[activeTab].confirmation_date_forwarder_1}
-                  onChange={e => setPartField('confirmation_date_forwarder_1', e.target.value)} />
-              </Field>
-              <Field label="Pick-up Date">
-                <FocusInput type="date" value={currentParts[activeTab].pickup_date_1}
-                  onChange={e => setPartField('pickup_date_1', e.target.value)} />
-              </Field>
-              <Field label="Departure Date">
-                <FocusInput type="date" value={currentParts[activeTab].departure_date_1}
-                  onChange={e => setPartField('departure_date_1', e.target.value)} />
-              </Field>
-              <Field label="ETA">
-                <FocusInput type="date" value={currentParts[activeTab].eta_1}
-                  onChange={e => setPartField('eta_1', e.target.value)} />
-              </Field>
-              <Field label="Actual Arrival Date">
-                <FocusInput type="date" value={currentParts[activeTab].actual_arrival_date_1}
-                  onChange={e => setPartField('actual_arrival_date_1', e.target.value)} />
-              </Field>
-              <Field label="Truck Number">
-                <FocusInput type="text" value={currentParts[activeTab].truck_number_1}
-                  onChange={e => setPartField('truck_number_1', e.target.value)} placeholder="" />
-              </Field>
-              <Field label="Transportation Invoice N">
-                <FocusInput type="text" value={currentParts[activeTab].transport_invoice_n_1}
-                  onChange={e => setPartField('transport_invoice_n_1', e.target.value)} placeholder="" />
-              </Field>
-              <Field label="Transportation Invoice Status">
-                <select
-                  value={currentParts[activeTab].transport_invoice_status_1}
-                  onChange={e => setPartField('transport_invoice_status_1', e.target.value)}
-                  style={{
-                    ...inputStyle,
-                    color: currentParts[activeTab].transport_invoice_status_1 === 'paid' ? '#059669'
-                      : currentParts[activeTab].transport_invoice_status_1 === 'unpaid' ? '#e11d48'
-                      : undefined,
-                    fontWeight: currentParts[activeTab].transport_invoice_status_1 ? 700 : 400,
-                  }}
-                >
-                  <option value="">— Select —</option>
-                  <option value="paid" style={{ color: '#059669', fontWeight: 700 }}>Paid</option>
-                  <option value="unpaid" style={{ color: '#e11d48', fontWeight: 700 }}>Unpaid</option>
-                </select>
-              </Field>
-              <Field label="Delay Reason">
-                <FocusInput type="text" value={currentParts[activeTab].delay_reason_1}
-                  onChange={e => setPartField('delay_reason_1', e.target.value)} placeholder="" />
-              </Field>
+              {delFields.map(field => renderDelField(
+                field,
+                currentParts[activeTab],
+                setPartField,
+                options,
+                {
+                  tabOrderValue,
+                  tabOrderQty,
+                  balanceAmount,
+                  balanceQty,
+                  hasOrderValue: !!currentInfo.total_order_value,
+                  hasOrderQty: !!currentInfo.total_order_quantity,
+                },
+                inputStyle,
+              ))}
             </div>
           )}
 

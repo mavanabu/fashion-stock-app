@@ -2,6 +2,148 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { optionsApi } from '../api';
 
+const DEL_FIELDS_ORDER_KEY = 'del_fields_order';
+
+const DEL_FIELDS_ALL = [
+  { key: 'total_order_value',             label: 'Total Order Value' },
+  { key: 'total_order_quantity',           label: 'Total Order Quantity' },
+  { key: 'paid_amount',                    label: 'Paid Amount' },
+  { key: 'invoice_date',                   label: 'Invoice Date' },
+  { key: 'delivery_amount_1',              label: 'Delivery Amount' },
+  { key: 'delivery_qty_1',                 label: 'Delivery Qty' },
+  { key: 'balance_amount',                 label: 'Balance Amount' },
+  { key: 'balance_qty',                    label: 'Balance Qty' },
+  { key: 'payment_status_del_1',           label: 'Payment Status Del.' },
+  { key: 'actual_payment_date_1',          label: 'Actual Payment Date' },
+  { key: 'total_pallets_boxes_1',          label: 'Total N of Pallets/Boxes' },
+  { key: 'total_volume_m3_1',              label: 'Total Volume M3' },
+  { key: 'weight_1',                       label: 'Weight KG' },
+  { key: 'transport_company_1',            label: 'Transport Company' },
+  { key: 'transport_price_1',              label: 'Transport Price' },
+  { key: 'confirmation_date_forwarder_1',  label: 'Conf. Date to Forwarder' },
+  { key: 'pickup_date_1',                  label: 'Pick-up Date' },
+  { key: 'departure_date_1',               label: 'Departure Date' },
+  { key: 'eta_1',                          label: 'ETA' },
+  { key: 'actual_arrival_date_1',          label: 'Actual Arrival Date' },
+  { key: 'truck_number_1',                 label: 'Truck Number' },
+  { key: 'transport_invoice_n_1',          label: 'Transportation Invoice N' },
+  { key: 'transport_invoice_status_1',     label: 'Transportation Invoice Status' },
+  { key: 'delay_reason_1',                 label: 'Delay Reason' },
+  { key: 'confirmation_date_shipper_1',    label: 'Confirmation Date to Shipper' },
+  { key: 'documents_receiving_date_1',     label: 'Documents Receiving Date' },
+];
+
+function loadSavedOrder() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DEL_FIELDS_ORDER_KEY));
+    if (!Array.isArray(saved) || saved.length === 0) return DEL_FIELDS_ALL;
+    const byKey = Object.fromEntries(DEL_FIELDS_ALL.map(f => [f.key, f]));
+    const ordered = saved.map(k => byKey[k]).filter(Boolean);
+    const savedSet = new Set(saved);
+    DEL_FIELDS_ALL.forEach(f => { if (!savedSet.has(f.key)) ordered.push(f); });
+    return ordered;
+  } catch {
+    return DEL_FIELDS_ALL;
+  }
+}
+
+function DelFieldsEditor() {
+  const [fields, setFields] = useState(loadSavedOrder);
+  const [savedMsg, setSavedMsg] = useState(false);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+  const dragItem = useRef(null);
+
+  const handleDragStart = (i) => { dragItem.current = i; };
+  const handleDragEnter = (i) => { setDragOverIndex(i); };
+  const handleDragEnd = () => {
+    if (dragItem.current === null || dragOverIndex === null || dragItem.current === dragOverIndex) {
+      dragItem.current = null;
+      setDragOverIndex(null);
+      return;
+    }
+    const next = [...fields];
+    const [moved] = next.splice(dragItem.current, 1);
+    next.splice(dragOverIndex, 0, moved);
+    dragItem.current = null;
+    setDragOverIndex(null);
+    setFields(next);
+  };
+
+  const handleSave = () => {
+    localStorage.setItem(DEL_FIELDS_ORDER_KEY, JSON.stringify(fields.map(f => f.key)));
+    setSavedMsg(true);
+    setTimeout(() => setSavedMsg(false), 2000);
+  };
+
+  const handleReset = () => {
+    setFields(DEL_FIELDS_ALL);
+  };
+
+  return (
+    <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #e5e0f3', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+      <div style={{
+        padding: '16px 20px', borderBottom: '1px solid #f0eef8',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: 'linear-gradient(to right, #faf9fe, #f5f3ff)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>⠿</div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#1c1433' }}>Del Tab Field Order</h3>
+            <p style={{ margin: 0, fontSize: 11, color: '#a89fc0' }}>Drag rows to reorder fields in every Del tab</p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={handleReset}
+            style={{ padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#f0eef8', color: '#6b5f82', border: '1px solid #e5e0f3', borderRadius: 8 }}
+          >
+            Reset
+          </button>
+          <button
+            onClick={handleSave}
+            style={{
+              padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              background: savedMsg ? 'rgba(5,150,105,0.1)' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+              color: savedMsg ? '#059669' : '#fff',
+              border: savedMsg ? '1px solid rgba(5,150,105,0.3)' : 'none', borderRadius: 8,
+              boxShadow: savedMsg ? 'none' : '0 3px 10px rgba(124,58,237,0.3)',
+              transition: 'all 0.2s',
+            }}
+          >
+            {savedMsg ? '✓ Saved!' : 'Save Order'}
+          </button>
+        </div>
+      </div>
+
+      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+        {fields.map((field, i) => (
+          <div
+            key={field.key}
+            draggable
+            onDragStart={() => handleDragStart(i)}
+            onDragEnter={() => handleDragEnter(i)}
+            onDragEnd={handleDragEnd}
+            onDragOver={e => e.preventDefault()}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '9px 14px', borderRadius: 9,
+              background: dragOverIndex === i ? '#f0eef8' : '#f8f7fc',
+              border: `1.5px solid ${dragOverIndex === i ? '#8b5cf6' : '#ede9f6'}`,
+              cursor: 'grab', transition: 'background 0.1s, border-color 0.1s',
+              userSelect: 'none',
+            }}
+          >
+            <span style={{ color: '#c4b8d8', fontSize: 16, lineHeight: 1, letterSpacing: -1, fontWeight: 700 }}>⠿</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#a89fc0', minWidth: 22, textAlign: 'right' }}>{i + 1}</span>
+            <span style={{ fontSize: 13, color: '#1c1433', fontWeight: 500 }}>{field.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const OPTION_TYPES = [
   { key: 'brands', label: 'Brands', icon: '🏷️', placeholder: 'Add brand…' },
   { key: 'seasons', label: 'Seasons', icon: '🌸', placeholder: 'e.g. SS25, AW25…' },
@@ -197,20 +339,43 @@ function OptionGroup({ typeKey, label, icon, placeholder }) {
 }
 
 export default function Options() {
+  const [activeSection, setActiveSection] = useState('lists');
+
+  const tabStyle = (key) => ({
+    padding: '10px 20px', border: 'none', background: 'transparent',
+    fontSize: 13, fontWeight: 600, cursor: 'pointer',
+    color: activeSection === key ? '#7c3aed' : '#6b5f82',
+    borderBottom: `2px solid ${activeSection === key ? '#7c3aed' : 'transparent'}`,
+    marginBottom: -1, transition: 'all 0.15s',
+  });
+
   return (
     <div style={{ padding: 32 }}>
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 24 }}>
         <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: '#1c1433', letterSpacing: '-0.5px' }}>Options</h1>
         <p style={{ margin: '4px 0 0', color: '#6b5f82', fontSize: 14 }}>
-          Manage dropdown options used in orders
+          Manage dropdown options and Del tab layout
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 20 }}>
-        {OPTION_TYPES.map(t => (
-          <OptionGroup key={t.key} typeKey={t.key} label={t.label} icon={t.icon} placeholder={t.placeholder} />
-        ))}
+      <div style={{ display: 'flex', borderBottom: '1px solid #e5e0f3', marginBottom: 28 }}>
+        <button style={tabStyle('lists')} onClick={() => setActiveSection('lists')}>Lists</button>
+        <button style={tabStyle('del_fields')} onClick={() => setActiveSection('del_fields')}>Del Fields Order</button>
       </div>
+
+      {activeSection === 'lists' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 20 }}>
+          {OPTION_TYPES.map(t => (
+            <OptionGroup key={t.key} typeKey={t.key} label={t.label} icon={t.icon} placeholder={t.placeholder} />
+          ))}
+        </div>
+      )}
+
+      {activeSection === 'del_fields' && (
+        <div style={{ maxWidth: 560 }}>
+          <DelFieldsEditor />
+        </div>
+      )}
     </div>
   );
 }
