@@ -255,10 +255,10 @@ export default function Orders() {
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                               <thead>
                                 <tr style={{ borderBottom: '1px solid #ede9fe' }}>
-                                  {['Part', 'Ordered Amt', 'Delivery Amt', 'Deposit', 'Del. Qty', 'Status', 'Del. Date', 'Invoice Date'].map((h, i) => (
+                                  {['Part', 'Total Order Value', 'Total Order Qty', 'Ordered Amt', 'Delivery Amt', 'Deposit', 'Del. Qty', 'Status', 'Del. Date', 'Invoice Date'].map((h, i) => (
                                     <th key={i} style={{
                                       padding: '9px 12px',
-                                      textAlign: i > 0 && i < 5 ? 'right' : 'left',
+                                      textAlign: i > 0 ? 'right' : 'left',
                                       fontSize: 10, fontWeight: 700,
                                       textTransform: 'uppercase', letterSpacing: '0.5px',
                                       color: '#8b5cf6', whiteSpace: 'nowrap',
@@ -267,45 +267,54 @@ export default function Orders() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {parts.map((p, pi) => (
+                                {parts.map((p, pi) => {
+                                  const prevAmt = parts.slice(0, pi).reduce((s, x) => s + Number(x.delivery_amount_1 ?? x.delivery_amount ?? 0), 0);
+                                  const prevQty = parts.slice(0, pi).reduce((s, x) => s + Number(x.delivery_qty_1 ?? x.delivery_qty ?? 0), 0);
+                                  const tabOrderValue = Number(o.total_order_value || 0) - prevAmt;
+                                  const tabOrderQty   = Number(o.total_order_quantity || 0) - prevQty;
+                                  return (
                                   <tr key={pi} style={{ borderBottom: '1px solid #ede9fe' }}>
                                     <td style={{ padding: '9px 12px', fontWeight: 700, color: '#7c3aed' }}>
                                       <span style={{ background: 'rgba(124,58,237,0.1)', padding: '2px 8px', borderRadius: 6, fontSize: 11 }}>
                                         Del {p.part}
                                       </span>
                                     </td>
+                                    <td style={{ padding: '9px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#1c1433' }}>{fmt(tabOrderValue)}</td>
+                                    <td style={{ padding: '9px 12px', textAlign: 'right', color: '#1c1433' }}>{tabOrderQty}</td>
                                     <td style={{ padding: '9px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#1c1433' }}>{fmt(p.ordered_amount)}</td>
-                                    <td style={{ padding: '9px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#1c1433' }}>{fmt(p.delivery_amount)}</td>
+                                    <td style={{ padding: '9px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#1c1433' }}>{fmt(p.delivery_amount_1 ?? p.delivery_amount)}</td>
                                     <td style={{ padding: '9px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#1c1433' }}>{fmt(p.deposit_payment)}</td>
-                                    <td style={{ padding: '9px 12px', textAlign: 'right', color: '#1c1433' }}>{p.delivery_qty ?? '—'}</td>
+                                    <td style={{ padding: '9px 12px', textAlign: 'right', color: '#1c1433' }}>{p.delivery_qty_1 ?? p.delivery_qty ?? '—'}</td>
                                     <td style={{ padding: '9px 12px' }}>
-                                      {p.payment_status ? (
-                                        <span style={{ ...STATUS_COLORS[p.payment_status], padding: '3px 9px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
-                                          {STATUS_LABELS[p.payment_status]}
+                                      {(p.payment_status_del_1 || p.payment_status) ? (
+                                        <span style={{ ...STATUS_COLORS[p.payment_status_del_1 || p.payment_status], padding: '3px 9px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
+                                          {STATUS_LABELS[p.payment_status_del_1 || p.payment_status]}
                                         </span>
                                       ) : '—'}
                                     </td>
                                     <td style={{ padding: '9px 12px', color: '#6b5f82', whiteSpace: 'nowrap' }}>{fmtDate(p.actual_delivery_date)}</td>
-                                    <td style={{ padding: '9px 12px', color: '#6b5f82', whiteSpace: 'nowrap' }}>{fmtDate(p.invoice_date)}</td>
+                                    <td style={{ padding: '9px 12px', color: '#6b5f82', whiteSpace: 'nowrap' }}>{fmtDate(p.invoice_date_del_1 ?? p.invoice_date)}</td>
                                   </tr>
-                                ))}
+                                  );
+                                })}
                               </tbody>
                               <tfoot>
                                 <tr style={{ background: 'rgba(124,58,237,0.07)', borderTop: '2px solid #ede9fe' }}>
                                   <td style={{ padding: '10px 12px', fontSize: 11, fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                     Total
                                   </td>
+                                  <td colSpan={2} />
                                   <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, fontSize: 13, color: '#1c1433', fontVariantNumeric: 'tabular-nums' }}>
                                     {fmt(parts.reduce((s, p) => s + Number(p.ordered_amount || 0), 0))}
                                   </td>
                                   <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, fontSize: 13, color: '#2563eb', fontVariantNumeric: 'tabular-nums' }}>
-                                    {fmt(parts.reduce((s, p) => s + Number(p.delivery_amount || 0), 0))}
+                                    {fmt(parts.reduce((s, p) => s + Number(p.delivery_amount_1 ?? p.delivery_amount ?? 0), 0))}
                                   </td>
                                   <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, fontSize: 13, color: '#059669', fontVariantNumeric: 'tabular-nums' }}>
                                     {fmt(parts.reduce((s, p) => s + Number(p.deposit_payment || 0), 0))}
                                   </td>
                                   <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, fontSize: 13, color: '#d97706' }}>
-                                    {parts.reduce((s, p) => s + Number(p.delivery_qty || 0), 0).toLocaleString()}
+                                    {parts.reduce((s, p) => s + Number(p.delivery_qty_1 ?? p.delivery_qty ?? 0), 0).toLocaleString()}
                                   </td>
                                   <td colSpan={3} />
                                 </tr>
