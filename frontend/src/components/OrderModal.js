@@ -125,7 +125,7 @@ const STATUS_OPTIONS = [
 
 const emptyInfo = () => ({
   brand_id: '', season_id: '', store_id: '', collection_id: '', payment_terms_id: '',
-  total_order_value: '', total_order_quantity: '', total_order_value_status: '', deposit_payments_only: '', deposit_payment: '',
+  total_order_value: '', total_order_quantity: '', total_order_value_status: '', deposit_payment: '',
 });
 
 const emptyPart = (part) => ({
@@ -276,7 +276,6 @@ export default function OrderModal({ mode, order, options, onSave, onClose }) {
     total_order_value: order.total_order_value || '',
     total_order_quantity: order.total_order_quantity || '',
     total_order_value_status: order.total_order_value_status || '',
-    deposit_payments_only: order.deposit_payments_only || '',
     deposit_payment: order.deposit_payment || '',
   } : null);
 
@@ -450,10 +449,6 @@ export default function OrderModal({ mode, order, options, onSave, onClose }) {
                   <option value="open">Open</option>
                   <option value="closed">Closed</option>
                 </select>
-              </Field>
-              <Field label="Deposit Payments Only">
-                <FocusInput type="number" step="0.01" min="0" value={currentInfo.deposit_payments_only}
-                  onChange={e => setInfoField('deposit_payments_only', e.target.value)} placeholder="0.00" />
               </Field>
               <Field label="Deposit Payment">
                 <FocusInput type="number" step="0.01" min="0" value={currentInfo.deposit_payment || ''}
