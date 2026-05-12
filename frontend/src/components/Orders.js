@@ -255,10 +255,10 @@ export default function Orders() {
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                               <thead>
                                 <tr style={{ borderBottom: '1px solid #ede9fe' }}>
-                                  {['Part', 'Total Order Value', 'Total Order Qty', 'Ordered Amt', 'Delivery Amt', 'Deposit', 'Del. Qty', 'Status', 'Del. Date', 'Invoice Date'].map((h, i) => (
+                                  {['Part', 'Total Order Value', 'Total Order Qty', 'Ordered Amt', 'Delivery Amt', 'Deposit', 'Del. Qty', 'Payment Status Del.', 'Actual Arrival Date', 'Invoice Date'].map((h, i) => (
                                     <th key={i} style={{
                                       padding: '9px 12px',
-                                      textAlign: i > 0 ? 'right' : 'left',
+                                      textAlign: i === 0 ? 'left' : i === 7 ? 'center' : 'right',
                                       fontSize: 10, fontWeight: 700,
                                       textTransform: 'uppercase', letterSpacing: '0.5px',
                                       color: '#8b5cf6', whiteSpace: 'nowrap',
@@ -285,15 +285,15 @@ export default function Orders() {
                                     <td style={{ padding: '9px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#1c1433' }}>{fmt(p.delivery_amount_1 ?? p.delivery_amount)}</td>
                                     <td style={{ padding: '9px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#1c1433' }}>{fmt(p.deposit_payment)}</td>
                                     <td style={{ padding: '9px 12px', textAlign: 'right', color: '#1c1433' }}>{p.delivery_qty_1 ?? p.delivery_qty ?? '—'}</td>
-                                    <td style={{ padding: '9px 12px' }}>
+                                    <td style={{ padding: '9px 12px', textAlign: 'center' }}>
                                       {(p.payment_status_del_1 || p.payment_status) ? (
                                         <span style={{ ...STATUS_COLORS[p.payment_status_del_1 || p.payment_status], padding: '3px 9px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
                                           {STATUS_LABELS[p.payment_status_del_1 || p.payment_status]}
                                         </span>
                                       ) : '—'}
                                     </td>
-                                    <td style={{ padding: '9px 12px', color: '#6b5f82', whiteSpace: 'nowrap' }}>{fmtDate(p.actual_delivery_date)}</td>
-                                    <td style={{ padding: '9px 12px', color: '#6b5f82', whiteSpace: 'nowrap' }}>{fmtDate(p.invoice_date_del_1 ?? p.invoice_date)}</td>
+                                    <td style={{ padding: '9px 12px', color: '#6b5f82', whiteSpace: 'nowrap', textAlign: 'right' }}>{fmtDate(p.actual_arrival_date_1 || p.actual_delivery_date)}</td>
+                                    <td style={{ padding: '9px 12px', color: '#6b5f82', whiteSpace: 'nowrap', textAlign: 'right' }}>{fmtDate(p.invoice_date || p.invoice_date_del_1)}</td>
                                   </tr>
                                   );
                                 })}
