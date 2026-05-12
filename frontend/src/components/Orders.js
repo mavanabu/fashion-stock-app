@@ -19,6 +19,7 @@ export default function Orders() {
   const [modal, setModal] = useState(null);
   const [options, setOptions] = useState({});
   const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState({ brand_id: '', season_id: '', store_id: '', collection_id: '' });
   const [expanded, setExpanded] = useState({});
   const [hoveredRow, setHoveredRow] = useState(null);
 
@@ -74,11 +75,22 @@ export default function Orders() {
   const toggleExpand = (id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
 
   const filtered = orders.filter(o => {
+    if (filters.brand_id && o.brand_id !== filters.brand_id) return false;
+    if (filters.season_id && o.season_id !== filters.season_id) return false;
+    if (filters.store_id && o.store_id !== filters.store_id) return false;
+    if (filters.collection_id && o.collection_id !== filters.collection_id) return false;
     if (!search.trim()) return true;
     const s = search.toLowerCase();
     return [o.brand?.name, o.season?.name, o.store?.name, o.collection?.name]
       .some(v => v?.toLowerCase().includes(s));
   });
+
+  const filterSelectStyle = {
+    padding: '11px 12px', border: '1.5px solid #e5e0f3', borderRadius: 10,
+    fontSize: 13, outline: 'none', background: '#fff', color: '#1c1433',
+    cursor: 'pointer', minWidth: 140, boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+  };
+  const hasFilters = search || Object.values(filters).some(Boolean);
 
 
   const thStyle = {
@@ -118,22 +130,53 @@ export default function Orders() {
         </button>
       </div>
 
-      {/* Search */}
-      <div style={{ marginBottom: 20, position: 'relative' }}>
-        <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#a89fc0', fontSize: 15 }}>🔍</span>
-        <input
-          value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Search by brand, season, store or collection…"
-          style={{
-            padding: '11px 14px 11px 40px', border: '1.5px solid #e5e0f3',
-            borderRadius: 10, fontSize: 14, width: 380, outline: 'none',
-            background: '#fff', color: '#1c1433',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-            transition: 'border-color 0.15s',
-          }}
-          onFocus={e => e.target.style.borderColor = '#8b5cf6'}
-          onBlur={e => e.target.style.borderColor = '#e5e0f3'}
-        />
+      {/* Search + Filters */}
+      <div style={{ marginBottom: 20, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: '0 0 auto' }}>
+          <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#a89fc0', fontSize: 15 }}>🔍</span>
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search by brand, season, store or collection…"
+            style={{
+              padding: '11px 14px 11px 40px', border: '1.5px solid #e5e0f3',
+              borderRadius: 10, fontSize: 14, width: 320, outline: 'none',
+              background: '#fff', color: '#1c1433',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+              transition: 'border-color 0.15s',
+            }}
+            onFocus={e => e.target.style.borderColor = '#8b5cf6'}
+            onBlur={e => e.target.style.borderColor = '#e5e0f3'}
+          />
+        </div>
+        <select value={filters.brand_id} onChange={e => setFilters(f => ({ ...f, brand_id: e.target.value }))} style={filterSelectStyle}>
+          <option value="">All brands</option>
+          {(options.brands || []).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+        <select value={filters.season_id} onChange={e => setFilters(f => ({ ...f, season_id: e.target.value }))} style={filterSelectStyle}>
+          <option value="">All seasons</option>
+          {(options.seasons || []).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+        <select value={filters.store_id} onChange={e => setFilters(f => ({ ...f, store_id: e.target.value }))} style={filterSelectStyle}>
+          <option value="">All stores</option>
+          {(options.stores || []).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+        <select value={filters.collection_id} onChange={e => setFilters(f => ({ ...f, collection_id: e.target.value }))} style={filterSelectStyle}>
+          <option value="">All collections</option>
+          {(options.collections || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={() => { setSearch(''); setFilters({ brand_id: '', season_id: '', store_id: '', collection_id: '' }); }}
+            style={{
+              padding: '10px 14px', border: '1.5px solid #e5e0f3', borderRadius: 10,
+              fontSize: 13, fontWeight: 600, color: '#7c3aed', background: '#fff',
+              cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            }}
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -165,10 +208,10 @@ export default function Orders() {
                     <td colSpan={8} style={{ padding: 64, textAlign: 'center', color: '#6b5f82' }}>
                       <div style={{ fontSize: 36, marginBottom: 12 }}>📭</div>
                       <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                        {search ? 'No orders match your search' : 'No orders yet'}
+                        {hasFilters ? 'No orders match your filters' : 'No orders yet'}
                       </div>
                       <div style={{ fontSize: 13, color: '#a89fc0' }}>
-                        {!search && 'Click "+ New Order" to get started'}
+                        {!hasFilters && 'Click "+ New Order" to get started'}
                       </div>
                     </td>
                   </tr>
