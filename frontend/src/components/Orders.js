@@ -37,7 +37,7 @@ export default function Orders() {
   };
 
   const loadOptions = useCallback(async () => {
-    const types = ['brands', 'seasons', 'stores', 'collections', 'payment_terms', 'transport_companies', 'weight_measurements', 'sblc_statuses'];
+    const types = ['brands', 'seasons', 'stores', 'collections', 'payment_terms', 'transport_companies', 'weight_measurements', 'sblc_statuses', 'delivery_terms'];
     const results = await Promise.all(types.map(t => optionsApi.list(t)));
     const opts = {};
     types.forEach((t, i) => { opts[t] = Array.isArray(results[i]) ? results[i] : []; });

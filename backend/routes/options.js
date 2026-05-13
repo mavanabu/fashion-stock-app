@@ -13,6 +13,7 @@ const TABLES = {
   transport_companies: 'transport_companies',
   weight_measurements: 'weight_measurements',
   sblc_statuses: 'sblc_statuses',
+  delivery_terms: 'delivery_terms',
 };
 
 router.get('/:type', async (req, res) => {

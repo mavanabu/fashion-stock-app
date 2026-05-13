@@ -9,6 +9,7 @@ const DEL_FIELDS_ALL = [
   { key: 'total_order_quantity',           label: 'Total Order Quantity' },
   { key: 'paid_amount',                    label: 'Paid Amount' },
   { key: 'invoice_date',                   label: 'Invoice Date' },
+  { key: 'delivery_term_id',               label: 'Delivery Term' },
   { key: 'delivery_amount_1',              label: 'Delivery Amount' },
   { key: 'delivery_qty_1',                 label: 'Delivery Qty' },
   { key: 'balance_amount',                 label: 'Balance Amount' },
@@ -153,6 +154,7 @@ const OPTION_TYPES = [
   { key: 'transport_companies', label: 'Transport Companies', icon: '🚚', placeholder: 'Add transport company…' },
   { key: 'weight_measurements', label: 'Weight Measurements', icon: '⚖️', placeholder: 'e.g. kg, lbs, ton…' },
   { key: 'sblc_statuses', label: 'SBLC Statuses', icon: '🏦', placeholder: 'Add SBLC status…' },
+  { key: 'delivery_terms', label: 'Delivery Terms', icon: '📦', placeholder: 'e.g. EXW, FOB, CIF…' },
 ];
 
 function OptionGroup({ typeKey, label, icon, placeholder }) {

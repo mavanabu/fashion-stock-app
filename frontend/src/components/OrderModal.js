@@ -7,6 +7,7 @@ const DEL_FIELDS_DEFAULT = [
   { key: 'total_order_quantity',           label: 'Total Order Quantity',           readonly: true,  computed: 'tabOrderQty' },
   { key: 'paid_amount',                    label: 'Paid Amount',                    type: 'number',  step: '0.01', placeholder: '0.00' },
   { key: 'invoice_date',                   label: 'Invoice Date',                   type: 'date',    required: true },
+  { key: 'delivery_term_id',               label: 'Delivery Term',                  type: 'delivery_term_select' },
   { key: 'delivery_amount_1',              label: 'Delivery Amount',                type: 'number',  step: '0.01', placeholder: '0.00', required: true },
   { key: 'delivery_qty_1',                 label: 'Delivery Qty',                   type: 'number',  step: '1',    placeholder: '0',    required: true },
   { key: 'balance_amount',                 label: 'Balance Amount',                 readonly: true,  computed: 'balanceAmount' },
@@ -86,6 +87,14 @@ function renderDelField(field, part, setPartField, options, computed, inputStyle
     );
   }
 
+  if (type === 'delivery_term_select') {
+    return (
+      <Field key={key} label={label}>
+        <Sel value={part[key] || ''} onChange={v => setPartField(key, v)} opts={options.delivery_terms || []} placeholder="— Select —" />
+      </Field>
+    );
+  }
+
   if (type === 'transport_invoice_status') {
     return (
       <Field key={key} label={label}>
@@ -141,6 +150,7 @@ const emptyPart = (part) => ({
   eta_1: '', actual_arrival_date_1: '', truck_number_1: '',
   transport_invoice_n_1: '', transport_invoice_status_1: '', delay_reason_1: '',
   confirmation_date_shipper_1: '', documents_receiving_date_1: '',
+  delivery_term_id: '',
 });
 
 const partHasData = (p) => p &&
