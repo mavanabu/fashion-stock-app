@@ -152,6 +152,7 @@ const OPTION_TYPES = [
   { key: 'payment_terms', label: 'Payment Terms', icon: '💳', placeholder: 'e.g. 30 days, Proforma…' },
   { key: 'transport_companies', label: 'Transport Companies', icon: '🚚', placeholder: 'Add transport company…' },
   { key: 'weight_measurements', label: 'Weight Measurements', icon: '⚖️', placeholder: 'e.g. kg, lbs, ton…' },
+  { key: 'sblc_statuses', label: 'SBLC Statuses', icon: '🏦', placeholder: 'Add SBLC status…' },
 ];
 
 function OptionGroup({ typeKey, label, icon, placeholder }) {

@@ -10,7 +10,8 @@ const SELECT = `
   season:seasons(id, name),
   store:stores(id, name),
   collection:collections(id, name),
-  payment_term:payment_terms_options(id, name)
+  payment_term:payment_terms_options(id, name),
+  sblc_status:sblc_statuses(id, name)
 `;
 
 router.get('/', async (req, res) => {
@@ -26,6 +27,7 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   const { brand_id, season_id, store_id, collection_id, payment_terms_id, parts, total_order_value, total_order_quantity, total_order_value_status, deposit_payments_only, deposit_payment } = req.body;
 
+  const { sblc_status_id } = req.body;
   const { data, error } = await supabase
     .from('delivery_orders')
     .insert([{
@@ -34,6 +36,7 @@ router.post('/', async (req, res) => {
       store_id: store_id || null,
       collection_id: collection_id || null,
       payment_terms_id: payment_terms_id || null,
+      sblc_status_id: sblc_status_id || null,
       parts: parts || [],
       total_order_value: total_order_value || null,
       total_order_quantity: total_order_quantity || null,
@@ -49,7 +52,7 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const { brand_id, season_id, store_id, collection_id, payment_terms_id, parts, total_order_value, total_order_quantity, total_order_value_status, deposit_payments_only, deposit_payment } = req.body;
+  const { brand_id, season_id, store_id, collection_id, payment_terms_id, sblc_status_id, parts, total_order_value, total_order_quantity, total_order_value_status, deposit_payments_only, deposit_payment } = req.body;
 
   const { data, error } = await supabase
     .from('delivery_orders')
@@ -59,6 +62,7 @@ router.put('/:id', async (req, res) => {
       store_id: store_id || null,
       collection_id: collection_id || null,
       payment_terms_id: payment_terms_id || null,
+      sblc_status_id: sblc_status_id || null,
       parts: parts || [],
       total_order_value: total_order_value || null,
       total_order_quantity: total_order_quantity || null,
